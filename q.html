@@ -1,0 +1,514 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Q&A Browser - Docs, Slides, Spreadsheet</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0; padding: 0;
+    background: #f8f9fa;
+    color: #202124;
+  }
+  header {
+    background: white;
+    padding: 10px 20px;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo {
+    font-size: 28px;
+    font-weight: bold;
+  }
+  .logo span.q {color: #4285f4;}
+  .logo span.and {color: #db4437;}
+  .logo span.a {color: #4285f4;}
+  nav {
+    display: flex;
+    gap: 15px;
+  }
+  nav button {
+    background: none;
+    border: none;
+    color: #1a73e8;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+  }
+  nav button.active, nav button:hover {
+    background: #e8f0fe;
+  }
+
+  main {
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* --- Q&A Search Tab --- */
+  #search-section {
+    display: none;
+  }
+  #search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  #search-bar input {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 16px;
+  }
+  #search-bar button {
+    padding: 10px 15px;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  #search-results {
+    margin-top: 15px;
+  }
+  #search-results img {
+    max-width: 100%;
+    margin-top: 10px;
+    border-radius: 6px;
+  }
+  .video-container iframe {
+    width: 100%;
+    height: 315px;
+    margin-top: 15px;
+  }
+
+  /* --- Documents Tab --- */
+  #doc-section {
+    display: none;
+  }
+  #doc-toolbar {
+    margin-bottom: 10px;
+  }
+  #doc-toolbar button, #doc-toolbar select {
+    margin-right: 5px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #doc-editor {
+    width: 100%;
+    height: 400px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    font-size: 16px;
+    overflow: auto;
+  }
+  /* Toolbar buttons active state */
+  #doc-toolbar button.active {
+    background-color: #cce0ff;
+  }
+
+  /* --- Slides Tab --- */
+  #slides-section {
+    display: none;
+  }
+  #slides-toolbar {
+    margin-bottom: 10px;
+  }
+  #slides-toolbar button {
+    margin-right: 5px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  #slide-editor {
+    width: 100%;
+    height: 350px;
+    border: 1px solid #ccc;
+    padding: 15px;
+    font-size: 18px;
+    overflow: auto;
+  }
+  #slide-list {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .slide-thumb {
+    border: 1px solid #bbb;
+    padding: 5px;
+    width: 100px;
+    height: 70px;
+    overflow: hidden;
+    cursor: pointer;
+    background: white;
+  }
+  .slide-thumb.active {
+    border-color: #1a73e8;
+    box-shadow: 0 0 5px #1a73e8;
+  }
+
+  /* --- Spreadsheet Tab --- */
+  #sheet-section {
+    display: none;
+  }
+  #sheet-toolbar {
+    margin-bottom: 10px;
+  }
+  #sheet-toolbar button {
+    margin-right: 5px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  table#sheet-table {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 100%;
+  }
+  table#sheet-table th, table#sheet-table td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    min-width: 60px;
+    height: 28px;
+    text-align: left;
+  }
+  table#sheet-table th {
+    background: #f1f3f4;
+    user-select: none;
+  }
+  table#sheet-table td {
+    cursor: text;
+  }
+  table#sheet-table td:focus {
+    outline: 2px solid #1a73e8;
+    background: #e8f0fe;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="q">Q</span><span class="and">&</span><span class="a">A</span>
+  </div>
+  <nav>
+    <button id="tab-search" class="active" onclick="switchTab('search')">Search</button>
+    <button id="tab-doc" onclick="switchTab('doc')">Documents</button>
+    <button id="tab-slides" onclick="switchTab('slides')">Slides</button>
+    <button id="tab-sheet" onclick="switchTab('sheet')">Spreadsheet</button>
+  </nav>
+</header>
+
+<main>
+
+  <!-- SEARCH TAB -->
+  <section id="search-section">
+    <div id="search-bar">
+      <input type="text" id="query" placeholder="Search Q&A... (try 'Solar System')" />
+      <button onclick="searchQandA()">🔍</button>
+    </div>
+    <div id="search-results"></div>
+  </section>
+
+  <!-- DOCUMENTS TAB -->
+  <section id="doc-section">
+    <div id="doc-toolbar">
+      <button onclick="execDocCommand('bold')"><b>B</b></button>
+      <button onclick="execDocCommand('italic')"><i>I</i></button>
+      <button onclick="execDocCommand('underline')"><u>U</u></button>
+      <button onclick="execDocCommand('strikeThrough')"><s>S</s></button>
+      <button onclick="execDocCommand('insertUnorderedList')">• List</button>
+      <button onclick="execDocCommand('insertOrderedList')">1. List</button>
+      <select onchange="execDocCommand('formatBlock', this.value)">
+        <option value="">Normal</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+      </select>
+      <input type="color" onchange="execDocCommand('foreColor', this.value)" title="Text Color" />
+      <input type="color" onchange="execDocCommand('hiliteColor', this.value)" title="Highlight Color" />
+      <button onclick="saveDoc()">💾 Save Document</button>
+      <button onclick="loadDoc()">📂 Load Document</button>
+      <button onclick="clearDoc()">🧹 Clear Document</button>
+    </div>
+    <div id="doc-editor" contenteditable="true" spellcheck="true" aria-label="Document Editor"></div>
+  </section>
+
+  <!-- SLIDES TAB -->
+  <section id="slides-section">
+    <div id="slides-toolbar">
+      <button onclick="addSlide()">➕ Add Slide</button>
+      <button onclick="removeSlide()">➖ Remove Slide</button>
+      <button onclick="saveSlides()">💾 Save Slides</button>
+      <button onclick="loadSlides()">📂 Load Slides</button>
+      <button onclick="clearSlides()">🧹 Clear Slides</button>
+    </div>
+    <div id="slide-editor" contenteditable="true" spellcheck="true" aria-label="Slide Editor"></div>
+    <div id="slide-list"></div>
+  </section>
+
+  <!-- SPREADSHEET TAB -->
+  <section id="sheet-section">
+    <div id="sheet-toolbar">
+      <button onclick="addSheetRow()">➕ Add Row</button>
+      <button onclick="addSheetCol()">➕ Add Col</button>
+      <button onclick="saveSheet()">💾 Save Sheet</button>
+      <button onclick="loadSheet()">📂 Load Sheet</button>
+      <button onclick="clearSheet()">🧹 Clear Sheet</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table id="sheet-table" tabindex="0"></table>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // --- TAB SWITCHING ---
+  function switchTab(tab) {
+    const tabs = ['search', 'doc', 'slides', 'sheet'];
+    tabs.forEach(t => {
+      document.getElementById(t + '-section').style.display = (t === tab) ? 'block' : 'none';
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+  }
+  switchTab('search');
+
+  // --- Q&A SEARCH ---
+  async function searchQandA() {
+    const query = document.getElementById('query').value.trim();
+    const results = document.getElementById('search-results');
+    results.innerHTML = 'Loading...';
+
+    if (!query) {
+      results.innerHTML = 'Please enter a search term.';
+      return;
+    }
+
+    try {
+      // Wikipedia API search snippet
+      const wikiRes = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`);
+      if (!wikiRes.ok) throw new Error('No Wikipedia results');
+      const wikiData = await wikiRes.json();
+
+      let html = `<h2>${wikiData.title}</h2><p>${wikiData.extract}</p>`;
+      if(wikiData.thumbnail) html += `<img src="${wikiData.thumbnail.source}" alt="${wikiData.title} thumbnail"/>`;
+
+      // YouTube embed (simple search link) - No API key version
+      const ytEmbed = `<div class="video-container"><iframe src="https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}" frameborder="0" allowfullscreen></iframe></div>`;
+
+      results.innerHTML = html + ytEmbed;
+
+    } catch(e) {
+      results.innerHTML = 'No results found. Try another search.';
+    }
+  }
+
+  // --- DOCUMENTS EDITOR ---
+  const docEditor = document.getElementById('doc-editor');
+  function execDocCommand(cmd, val=null) {
+    document.execCommand(cmd, false, val);
+    docEditor.focus();
+  }
+  // Save/load doc in localStorage
+  function saveDoc() {
+    localStorage.setItem('qa_doc', docEditor.innerHTML);
+    alert('Document saved locally!');
+  }
+  function loadDoc() {
+    const saved = localStorage.getItem('qa_doc');
+    if (saved) docEditor.innerHTML = saved;
+    else alert('No saved document found.');
+  }
+  function clearDoc() {
+    if(confirm('Clear the document?')) docEditor.innerHTML = '';
+  }
+
+  // --- SLIDES ---
+  let slides = [];
+  let currentSlideIndex = -1;
+  const slideEditor = document.getElementById('slide-editor');
+  const slideList = document.getElementById('slide-list');
+
+  function addSlide() {
+    if(currentSlideIndex >= 0) saveCurrentSlide();
+    slides.push('');
+    currentSlideIndex = slides.length - 1;
+    renderSlides();
+    loadCurrentSlide();
+  }
+  function removeSlide() {
+    if(slides.length === 0) return alert('No slides to remove.');
+    slides.splice(currentSlideIndex, 1);
+    if(slides.length === 0) {
+      currentSlideIndex = -1;
+      slideEditor.innerHTML = '';
+      renderSlides();
+      return;
+    }
+    currentSlideIndex = Math.min(currentSlideIndex, slides.length - 1);
+    renderSlides();
+    loadCurrentSlide();
+  }
+  function saveCurrentSlide() {
+    if(currentSlideIndex >= 0) slides[currentSlideIndex] = slideEditor.innerHTML;
+  }
+  function loadCurrentSlide() {
+    if(currentSlideIndex >= 0) slideEditor.innerHTML = slides[currentSlideIndex];
+  }
+  function renderSlides() {
+    slideList.innerHTML = '';
+    slides.forEach((content, i) => {
+      const div = document.createElement('div');
+      div.className = 'slide-thumb' + (i === currentSlideIndex ? ' active' : '');
+      div.innerText = content.replace(/<\/?[^>]+(>|$)/g, "").slice(0, 20) || `Slide ${i+1}`;
+      div.title = `Slide ${i+1}`;
+      div.onclick = () => {
+        saveCurrentSlide();
+        currentSlideIndex = i;
+        renderSlides();
+        loadCurrentSlide();
+      };
+      slideList.appendChild(div);
+    });
+  }
+  function saveSlides() {
+    saveCurrentSlide();
+    localStorage.setItem('qa_slides', JSON.stringify(slides));
+    alert('Slides saved locally!');
+  }
+  function loadSlides() {
+    const saved = localStorage.getItem('qa_slides');
+    if(saved) {
+      slides = JSON.parse(saved);
+      currentSlideIndex = 0;
+      renderSlides();
+      loadCurrentSlide();
+    } else alert('No saved slides found.');
+  }
+  function clearSlides() {
+    if(confirm('Clear all slides?')) {
+      slides = [];
+      currentSlideIndex = -1;
+      slideEditor.innerHTML = '';
+      renderSlides();
+    }
+  }
+
+  // --- SPREADSHEET ---
+  let sheetData = [[]]; // 2D array for cells
+  let sheetRows = 5;
+  let sheetCols = 5;
+  const sheetTable = document.getElementById('sheet-table');
+
+  function initSheet() {
+    sheetData = Array(sheetRows).fill(0).map(() => Array(sheetCols).fill(''));
+    renderSheet();
+  }
+  function renderSheet() {
+    sheetTable.innerHTML = '';
+    // Headers
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    headRow.appendChild(document.createElement('th')); // top-left empty
+    for(let c=0;c<sheetCols;c++) {
+      const th = document.createElement('th');
+      th.innerText = String.fromCharCode(65 + c);
+      headRow.appendChild(th);
+    }
+    thead.appendChild(headRow);
+    sheetTable.appendChild(thead);
+
+    // Body rows
+    const tbody = document.createElement('tbody');
+    for(let r=0;r<sheetRows;r++) {
+      const tr = document.createElement('tr');
+      const th = document.createElement('th');
+      th.innerText = r + 1;
+      tr.appendChild(th);
+      for(let c=0;c<sheetCols;c++) {
+        const td = document.createElement('td');
+        td.contentEditable = 'true';
+        td.dataset.r = r;
+        td.dataset.c = c;
+        td.innerText = sheetData[r][c];
+        td.oninput = () => {
+          sheetData[r][c] = td.innerText;
+          evaluateSheet();
+        };
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+    sheetTable.appendChild(tbody);
+  }
+  function evaluateSheet() {
+    for(let r=0; r<sheetRows; r++) {
+      for(let c=0; c<sheetCols; c++) {
+        let val = sheetData[r][c];
+        if(typeof val === 'string' && val.startsWith('=')) {
+          try {
+            // Support basic addition formula only: e.g. =A1+B2
+            const expr = val.substring(1).toUpperCase().replace(/([A-Z])(\d+)/g, (m,col,row) => {
+              const colIndex = col.charCodeAt(0) - 65;
+              const rowIndex = parseInt(row, 10) -1;
+              let cellVal = sheetData[rowIndex]?.[colIndex] || 0;
+              if(cellVal.startsWith('=')) return 0; // prevent recursion
+              return isNaN(cellVal) ? 0 : cellVal;
+            });
+            // eslint-disable-next-line no-eval
+            const result = eval(expr);
+            sheetData[r][c] = result.toString();
+            updateCell(r,c,result.toString());
+          } catch {
+            // Ignore errors
+          }
+        }
+      }
+    }
+  }
+  function updateCell(r,c,val) {
+    const td = sheetTable.querySelector(`td[data-r="${r}"][data-c="${c}"]`);
+    if(td) td.innerText = val;
+  }
+
+  function addSheetRow() {
+    sheetData.push(Array(sheetCols).fill(''));
+    sheetRows++;
+    renderSheet();
+  }
+  function addSheetCol() {
+    sheetData.forEach(row => row.push(''));
+    sheetCols++;
+    renderSheet();
+  }
+  function saveSheet() {
+    localStorage.setItem('qa_sheet', JSON.stringify({rows: sheetRows, cols: sheetCols, data: sheetData}));
+    alert('Spreadsheet saved locally!');
+  }
+  function loadSheet() {
+    const saved = localStorage.getItem('qa_sheet');
+    if(saved) {
+      const obj = JSON.parse(saved);
+      sheetRows = obj.rows;
+      sheetCols = obj.cols;
+      sheetData = obj.data;
+      renderSheet();
+    } else alert('No saved spreadsheet found.');
+  }
+  function clearSheet() {
+    if(confirm('Clear the spreadsheet?')) {
+      sheetRows = 5;
+      sheetCols = 5;
+      initSheet();
+    }
+  }
+
+  initSheet();
+
+</script>
+</body>
+</html>
